@@ -39,7 +39,8 @@ def get_account_authorization_details(
     """
     print()
     print(emoji.emojize(
-        ":heavy_exclamation_mark:  Starting report generation.", language='alias'))
+        ":heavy_exclamation_mark:  Starting report generation.",
+        language='alias'))
 
     config = Config(connect_timeout=5,
                     retries={"max_attempts": 10})
@@ -59,18 +60,24 @@ def get_account_authorization_details(
         "RoleDetailList": [],
         "Policies": [],
     }
+
+    # Get the account authorization details report
     paginator = iam_client.get_paginator("get_account_authorization_details")
 
+    # Iterate over the pages of results for users
     for page in paginator.paginate(Filter=["User"]):
         # Always add inline user policies
         results["UserDetailList"].extend(page["UserDetailList"])
+    # Iterate over the pages of results for groups
     for page in paginator.paginate(Filter=["Group"]):
         results["GroupDetailList"].extend(page["GroupDetailList"])
+    # Iterate over the pages of results for roles
     for page in paginator.paginate(Filter=["Role"]):
         results["RoleDetailList"].extend(page["RoleDetailList"])
         for policy in page["Policies"]:
             # Ignore Service Linked Roles which cannot be modified and will create messy results.
             results["RoleDetailList"].append(policy)
+    # Iterate over the pages of results for local managed policies
     for page in paginator.paginate(Filter=["LocalManagedPolicy"]):
         # Add customer-managed policies IF they are attached to IAM principals
         for policy in page["Policies"]:
@@ -90,6 +97,7 @@ def get_account_authorization_details(
                         ):
                             policy_version_list.append(policy_version)
                             break
+                    # Create a new entry with only the default policy version
                     entry = {
                         "PolicyName": policy.get("PolicyName"),
                         "PolicyId": policy.get("PolicyId"),
@@ -107,6 +115,7 @@ def get_account_authorization_details(
                     }
                     results["Policies"].append(entry)
 
+    # Let the user know that the report is complete.
     print(emoji.emojize(":white_check_mark:  JSON Report generation complete.",
                         language='alias'))
 
@@ -119,15 +128,18 @@ def get_account_authorization_details(
     # use pandas to read the json file and convert it to an excel file
     print(emoji.emojize(
         ":white_check_mark:  Converting JSON to Excel.", language='alias'))
+    # write the json file to an excel file
     with open(output) as f:
         data = json.load(f)
         df = pd.json_normalize(data, record_path=['UserDetailList'],
                                errors='ignore'
                                )
-        df.to_excel(output.replace('.json', '.xlsx'), sheet_name='Users', index=False)
+        df.to_excel(output.replace('.json', '.xlsx'),
+                    sheet_name='Users', index=False)
         print(emoji.emojize(":white_check_mark:  Excel report written to {}.".format(output.replace('.json', '.xlsx')),
                             language='alias'))
-        
+
+    # open the excel file
     if open_in_excel:
         # determine if platform is Windows, Linux or Mac
         if platform.system() == 'Windows':
@@ -141,7 +153,8 @@ def get_account_authorization_details(
             print(emoji.emojize(
                 ":open_file_folder: Opening {} in Excel in Windows").format(output.replace('.json', '.xlsx')))
             # nosec B605: start is used to open a file with excel.exe
-            os.system('start excel.exe {}'.format(output.replace('.json', '.xlsx')))
+            os.system('start excel.exe {}'.format(
+                output.replace('.json', '.xlsx')))
         elif platform.system() == 'Linux':
             # check if LibreOffice is installed
             # if which('libreoffice') is None:
@@ -153,7 +166,8 @@ def get_account_authorization_details(
             print(emoji.emojize(
                 ":open_file_folder: Opening {} in LibreOffice in Linux").format(output.replace('.json', '.xlsx')))
             # nosec B605: libreoffice is used to open a file with LibreOffice
-            os.system('libreoffice {}'.format(output.replace('.json', '.xlsx')))
+            os.system('libreoffice {}'.format(
+                output.replace('.json', '.xlsx')))
         elif platform.system() == 'Darwin':
             # Check if Excel is installed in Mac
             # if which('Microsoft Excel.app') is None:
@@ -165,7 +179,9 @@ def get_account_authorization_details(
             print(emoji.emojize(
                 ":open_file_folder: Opening {} in Excel in Mac").format(output.replace('.json', '.xlsx')))
             # nosec B605: open is used to open a file with Microsoft Excel
-            os.system('open -a "Microsoft Excel" {}'.format(output.replace('.json', '.xlsx')))
+            os.system(
+                'open -a "Microsoft Excel" {}'.format(output.replace('.json', '.xlsx')))
+
 
 def main():
     """
@@ -254,7 +270,7 @@ def main():
                              'Example: --log-level INFO',
                         default='ERROR',
                         choices=('CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'))
-    
+
     # The open in excel argument
     parser.add_argument('-x', '--open-in-excel',
                         help='Open the file in Excel.',
@@ -372,8 +388,11 @@ def main():
         output=args.output,
         open_in_excel=args.open_in_excel)
 
+    # Let the user know that the script is done.
+    print(emoji.emojize(":checkered_flag:  Done!",))
     print('-' * get_terminal_size()[0])
 
 
+# The main function.
 if __name__ == "__main__":
     main()
