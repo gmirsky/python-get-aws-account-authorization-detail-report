@@ -20,6 +20,78 @@ from shutil import which as which
 logger = logging.getLogger(__name__)
 
 
+def flatten_nested_json_df(df):
+    """
+    Flatten a nested json dataframe.
+
+    :param df: A pandas dataframe with nested json fields.
+    :return: A flattened pandas dataframe.
+    """
+
+    # reset index to avoid problems with explode
+    df = df.reset_index()
+
+    # print the dataframe shape and columns
+    print(emoji.emojize(":wrench:  Orignal shape {}.".format(
+        df.shape), language='alias'))
+    print(emoji.emojize(":wrench:  Original columns: {}".format(
+        df.columns), language='alias'))
+
+    # search for columns to explode/flatten
+    s = (df.applymap(type) == list).all()
+    # get the list of columns to explode
+    list_columns = s[s].index.tolist()
+    # search for columns to explode/flatten
+    s = (df.applymap(type) == dict).all()
+    dict_columns = s[s].index.tolist()
+
+    # print the columns to explode/flatten
+    print(f"lists: {list_columns}, dicts: {dict_columns}")
+
+    # loop until there are no more columns to explode/flatten
+    while len(list_columns) > 0 or len(dict_columns) > 0:
+        new_columns = []
+
+        for col in dict_columns:
+            # print the column being flattened
+            print(emoji.emojize(
+                ":wrench:  Flattening: {}.".format(col), language='alias'))
+            # explode dictionaries horizontally, adding new columns
+            horiz_exploded = pd.json_normalize(df[col]).add_prefix(f'{col}.')
+            # reset index to avoid problems with explode
+            horiz_exploded.index = df.index
+            # join the new columns to the original dataframe
+            df = pd.concat([df, horiz_exploded], axis=1).drop(columns=[col])
+            # add the new columns to the list of columns to explode/flatten
+            new_columns.extend(horiz_exploded.columns)  # inplace
+
+        # check if there are still a dict or list of fields to flatten
+        for col in list_columns:
+            print(emoji.emojize(
+                ":wrench:  Exploding: {}.".format(col), language='alias'))
+            # explode lists vertically, adding new columns
+            df = df.drop(columns=[col]).join(df[col].explode().to_frame())
+            # add the new columns to the list of columns to explode/flatten
+            new_columns.append(col)
+
+        # check if there are still dict o list fields to flatten
+        s = (df[new_columns].applymap(type) == list).all()
+        list_columns = s[s].index.tolist()
+
+        s = (df[new_columns].applymap(type) == dict).all()
+        dict_columns = s[s].index.tolist()
+
+        print(emoji.emojize(":wrench:  Lists: {} Dictionaries {}.".format(
+            list_columns, dict_columns), language='alias'))
+
+    # print the dataframe shape and columns
+    print(emoji.emojize(":wrench:  Final shape {}.".format(df.shape),
+                        language='alias'))
+    print(emoji.emojize(":wrench:  Final columns: {}".format(df.columns),
+                        language='alias'))
+    return df
+
+
 def get_account_authorization_details(
     profile,
     output,
@@ -35,7 +107,6 @@ def get_account_authorization_details(
     :param include_non_default_policy_versions: When downloading AWS managed policy documents,
       also include the non-default policy versions. Note that this will dramatically increase 
       the size of the downloaded file.
-    :return:
     """
     print()
     print(emoji.emojize(
@@ -45,9 +116,10 @@ def get_account_authorization_details(
     config = Config(connect_timeout=5,
                     retries={"max_attempts": 10})
 
+    # Create a boto3 session
     session = boto3.Session(profile_name=profile,
                             region_name=region)
-
+    # Create an IAM client
     iam_client = session.client("iam",
                                 config=config,
                                 use_ssl=True,
@@ -130,12 +202,20 @@ def get_account_authorization_details(
         ":white_check_mark:  Converting JSON to Excel.", language='alias'))
     # write the json file to an excel file
     with open(output) as f:
+        # load the json file
         data = json.load(f)
+        # # convert the json file to a pandas dataframe
         df = pd.json_normalize(data, record_path=['UserDetailList'],
+                               # meta=['GroupDetailList', 'RoleDetailList', 'Policies'']
                                errors='ignore'
                                )
-        df.to_excel(output.replace('.json', '.xlsx'),
-                    sheet_name='Users', index=False)
+
+        df_flattened = flatten_nested_json_df(df)
+        # write the excel file
+        df_flattened.to_excel(output.replace('.json', '.xlsx'),
+                              sheet_name='UserDetailList',
+                              index=False)
+        # Let the user know that the report has been written to an excel file
         print(emoji.emojize(":white_check_mark:  Excel report written to {}.".format(output.replace('.json', '.xlsx')),
                             language='alias'))
 
@@ -397,3 +477,5 @@ def main():
 # The main function.
 if __name__ == "__main__":
     main()
+
+# End of script
