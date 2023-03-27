@@ -345,7 +345,7 @@ def main():
 
     # The file output argument
     parser.add_argument('-o', '--output',
-                        help='The output directory to save the JSON files to.'
+                        help='The output directory and file to save the JSON files to.'
                         'Default: ./accountAuthorizationDetailsReport.json'
                         'Example: --output ./accountAuthorizationDetailsReport.json',
                         default='./accountAuthorizationDetailsReport.json')
