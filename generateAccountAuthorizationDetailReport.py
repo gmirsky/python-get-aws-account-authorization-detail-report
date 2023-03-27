@@ -98,7 +98,8 @@ def get_account_authorization_details(
     region,
     include_non_default_policy_versions=False,
     include_unattached=False,
-    open_in_excel=False
+    open_in_excel=False,
+    flatten_json=False
 ):
     """
     Run aws iam get-account-authorization-details and store locally.
@@ -209,12 +210,17 @@ def get_account_authorization_details(
                                # meta=['GroupDetailList', 'RoleDetailList', 'Policies'']
                                errors='ignore'
                                )
-
-        df_flattened = flatten_nested_json_df(df)
-        # write the excel file
-        df_flattened.to_excel(output.replace('.json', '.xlsx'),
-                              sheet_name='UserDetailList',
-                              index=False)
+        if flatten_json:
+            df_flattened = flatten_nested_json_df(df)
+            # write the excel file
+            df_flattened.to_excel(output.replace('.json', '.xlsx'),
+                                  sheet_name='UserDetailList',
+                                  index=False)
+        else:
+            # write the excel file
+            df.to_excel(output.replace('.json', '.xlsx'),
+                        sheet_name='UserDetailList',
+                        index=False)
         # Let the user know that the report has been written to an excel file
         print(emoji.emojize(":white_check_mark:  Excel report written to {}.".format(output.replace('.json', '.xlsx')),
                             language='alias'))
@@ -357,6 +363,11 @@ def main():
                         help='Open the file in Excel.',
                         action='store_true')
 
+    # The flatten argument
+    parser.add_argument('-f', '--flatten',
+                        help='Flatten the JSON file.',
+                        action='store_true')
+
     args = parser.parse_args()
 
     """ 
@@ -467,10 +478,11 @@ def main():
         include_non_default_policy_versions=args.include_non_default_policy_versions,
         include_unattached=args.include_unattached,
         output=args.output,
-        open_in_excel=args.open_in_excel)
+        open_in_excel=args.open_in_excel,
+        flatten_json=args.flatten)
 
     # Let the user know that the script is done.
-    print(emoji.emojize(":checkered_flag:  Done!",))
+    print(emoji.emojize(":checkered_flag:  Done!", language='alias'))
     print('-' * get_terminal_size()[0])
 
 
