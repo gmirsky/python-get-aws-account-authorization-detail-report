@@ -181,6 +181,7 @@ def get_account_authorization_details(
             # nosec B605: open is used to open a file with Microsoft Excel
             os.system(
                 'open -a "Microsoft Excel" {}'.format(output.replace('.json', '.xlsx')))
+        return 0
 
 
 def main():
