@@ -32,10 +32,12 @@ def flatten_nested_json_df(df):
     df = df.reset_index()
 
     # print the dataframe shape and columns
-    print(emoji.emojize(":wrench:  Orignal shape {}.".format(
-        df.shape), language='alias'))
-    print(emoji.emojize(":wrench:  Original columns: {}".format(
-        df.columns), language='alias'))
+    print(emoji.emojize(f":wrench:  Orignal shape {df.shape}.", language='alias'))
+    print(
+        emoji.emojize(
+            f":wrench:  Original columns: {df.columns}", language='alias'
+        )
+    )
 
     # search for columns to explode/flatten
     s = (df.applymap(type) == list).all()
@@ -54,8 +56,7 @@ def flatten_nested_json_df(df):
 
         for col in dict_columns:
             # print the column being flattened
-            print(emoji.emojize(
-                ":wrench:  Flattening: {}.".format(col), language='alias'))
+            print(emoji.emojize(f":wrench:  Flattening: {col}.", language='alias'))
             # explode dictionaries horizontally, adding new columns
             horiz_exploded = pd.json_normalize(df[col]).add_prefix(f'{col}.')
             # reset index to avoid problems with explode
@@ -67,8 +68,7 @@ def flatten_nested_json_df(df):
 
         # check if there are still a dict or list of fields to flatten
         for col in list_columns:
-            print(emoji.emojize(
-                ":wrench:  Exploding: {}.".format(col), language='alias'))
+            print(emoji.emojize(f":wrench:  Exploding: {col}.", language='alias'))
             # explode lists vertically, adding new columns
             df = df.drop(columns=[col]).join(df[col].explode().to_frame())
             # add the new columns to the list of columns to explode/flatten
@@ -81,14 +81,20 @@ def flatten_nested_json_df(df):
         s = (df[new_columns].applymap(type) == dict).all()
         dict_columns = s[s].index.tolist()
 
-        print(emoji.emojize(":wrench:  Lists: {} Dictionaries {}.".format(
-            list_columns, dict_columns), language='alias'))
+        print(
+            emoji.emojize(
+                f":wrench:  Lists: {list_columns} Dictionaries {dict_columns}.",
+                language='alias',
+            )
+        )
 
     # print the dataframe shape and columns
-    print(emoji.emojize(":wrench:  Final shape {}.".format(df.shape),
-                        language='alias'))
-    print(emoji.emojize(":wrench:  Final columns: {}".format(df.columns),
-                        language='alias'))
+    print(emoji.emojize(f":wrench:  Final shape {df.shape}.", language='alias'))
+    print(
+        emoji.emojize(
+            f":wrench:  Final columns: {df.columns}", language='alias'
+        )
+    )
     return df
 
 
@@ -195,8 +201,12 @@ def get_account_authorization_details(
     # Write the results to a file.
     with open(output, 'w') as f:
         json.dump(results, f, indent=4, default=str)
-        print(emoji.emojize(":white_check_mark:  Report written to {}.".format(output),
-                            language='alias'))
+        print(
+            emoji.emojize(
+                f":white_check_mark:  Report written to {output}.",
+                language='alias',
+            )
+        )
 
     # use pandas to read the json file and convert it to an excel file
     print(emoji.emojize(
@@ -222,8 +232,12 @@ def get_account_authorization_details(
                         sheet_name='UserDetailList',
                         index=False)
         # Let the user know that the report has been written to an excel file
-        print(emoji.emojize(":white_check_mark:  Excel report written to {}.".format(output.replace('.json', '.xlsx')),
-                            language='alias'))
+        print(
+            emoji.emojize(
+                f":white_check_mark:  Excel report written to {output.replace('.json', '.xlsx')}.",
+                language='alias',
+            )
+        )
 
     # open the excel file
     if open_in_excel:
@@ -239,8 +253,7 @@ def get_account_authorization_details(
             print(emoji.emojize(
                 ":open_file_folder: Opening {} in Excel in Windows").format(output.replace('.json', '.xlsx')))
             # nosec B605: start is used to open a file with excel.exe
-            os.system('start excel.exe {}'.format(
-                output.replace('.json', '.xlsx')))
+            os.system(f"start excel.exe {output.replace('.json', '.xlsx')}")
         elif platform.system() == 'Linux':
             # check if LibreOffice is installed
             # if which('libreoffice') is None:
@@ -252,8 +265,7 @@ def get_account_authorization_details(
             print(emoji.emojize(
                 ":open_file_folder: Opening {} in LibreOffice in Linux").format(output.replace('.json', '.xlsx')))
             # nosec B605: libreoffice is used to open a file with LibreOffice
-            os.system('libreoffice {}'.format(
-                output.replace('.json', '.xlsx')))
+            os.system(f"libreoffice {output.replace('.json', '.xlsx')}")
         elif platform.system() == 'Darwin':
             # Check if Excel is installed in Mac
             # if which('Microsoft Excel.app') is None:
@@ -265,8 +277,7 @@ def get_account_authorization_details(
             print(emoji.emojize(
                 ":open_file_folder: Opening {} in Excel in Mac").format(output.replace('.json', '.xlsx')))
             # nosec B605: open is used to open a file with Microsoft Excel
-            os.system(
-                'open -a "Microsoft Excel" {}'.format(output.replace('.json', '.xlsx')))
+            os.system(f"""open -a "Microsoft Excel" {output.replace('.json', '.xlsx')}""")
         return 0
 
 
@@ -391,7 +402,7 @@ def main():
         print(emoji.emojize(
             'You must use Python 3 or higher :cross_mark:',
             language='alias'))
-        raise Exception("You must use Python 3 or higher")
+        raise ValueError("You must use Python 3 or higher")
     else:
         print(emoji.emojize(
             'Python version is OK :check_mark_button:',
@@ -402,7 +413,7 @@ def main():
         print(emoji.emojize(
             'AWS CLI is not installed :cross_mark:',
             language='alias'))
-        raise Exception("AWS CLI is not installed")
+        raise ValueError("AWS CLI is not installed")
     else:
         print(emoji.emojize(
             'AWS CLI is installed :check_mark_button:',
@@ -416,7 +427,7 @@ def main():
             print(emoji.emojize(
                 'You must use AWS CLI version 2 or higher :heavy_exclamation_mark:',
                 language='alias'))
-            raise Exception("You must use AWS CLI version 2 or higher")
+            raise ValueError("You must use AWS CLI version 2 or higher")
         else:
             # Display the version of the AWS CLI.
             print(emoji.emojize(":ok:  AWS CLI version: {}", language='alias').format(
@@ -453,20 +464,16 @@ def main():
     # Display the include-unattached argument.
     print(emoji.emojize(":arrow_right:  Include unattached policies: {}", language='alias').format(
         args.include_unattached))
-    # check to see if the output value ends with .json
-    if args.output.endswith('.json'):
-        # Display the output directory.
-        print(emoji.emojize(":arrow_right:  Output directory and file: {}",
-              language='alias').format(args.output))
-    else:
+    if not args.output.endswith('.json'):
         print(emoji.emojize(":bangbang:  Output file does not end with .json, replacing extension with .json at the end of the file name",
                             language='alias'))
         #  remove file extension if it exists
         args.output = args.output.split('.')[0]
         #  add .json file extension
         args.output = args.output + '.json'
-        print(emoji.emojize(":arrow_right:  Output directory and file: {}",
-              language='alias').format(args.output))
+    # Display the output directory.
+    print(emoji.emojize(":arrow_right:  Output directory and file: {}",
+          language='alias').format(args.output))
     # Display the logging level.
     print(emoji.emojize(":arrow_right:  Logging level: {}",
           language='alias').format(args.log_level))
